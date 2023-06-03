@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body style="background-image: url('https://i.pinimg.com/originals/a6/e8/cd/a6e8cd2be4da23beead6c335790d52c7.jpg'); 
+    background-repeat: repeat; 
+    background-size: 450px;">
+
+    <div id="textDiv">Right</div>
+
+    <!-- Каждый квадратик - 30px. В ряд - 7-->
+    <div id="mainDiv">
+        <div id="snake"></div>
+        <div id="meal"></div>
+    </div>
+
+    <div id="div1"></div> <!-- Ограды-->
+    <div id="div2"></div>
+    <div id="div3"></div>
+    <div id="div4"></div>
+    
+    <button id="startButton">Старт</button>
+    
+    <audio id="eat" controls src="eat.mp3"></audio>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+
+        //Теперь надо добавить возможность съедать meal и после этого расти в размере
+        //1- Нужно засечь нынешнее местоположение фигур, и если они совпадают, значит змейка съест meal
+
+        let currentDirection = "right"
+        let timer = ""
+        $("#startButton").click(()=>{
+            timer = setInterval(func, 600)
+        })
+
+        let sl = ""
+        let st = ""
+        let ml = ""
+        let mt = ""
+        let snakeBody = ["90:90"]
+        let isMetWithMeal = false
+        let freePlaces = []
+        let tempLeft = 0
+        let tempTop = 0
+        let randomCoordinateFromFreePlaces = 0
+        
+
+        function func(){
+
+            //если змейка в данный момент вышла за предел
+            if((Number($('#snake').css("left").split("p")[0]) < 0 || Number($('#snake').css("left").split("p")[0]) >= 210) || (Number($('#snake').css("top").split("p")[0]) < 0 || Number($('#snake').css("top").split("p")[0]) >= 210)){
+                //setTimeout(() => {  console.log("World! - 3 секунд"); }, 3000)
+                clearInterval(timer) //Отменяет таймер
+                //Метод innerHTML убирает всё содержание страницы
+                document.body.innerHTML = '<h1 id="gameover"></h1>'
+                
+                document.body.innerHTML = '<audio id="gameoverMusic"></audio><br><h1 id="gameover"></h1>'
+                $("#gameoverMusic").attr("src", "gameover.mp3")
+                $("#gameoverMusic").attr("controls", "")
+                $("#gameover").text("Поражение!!")
+                //$("#gameoverMusic").get(0).play()
+                jQuery("#gameoverMusic").trigger('play')
+            }
+            else {
+                //Допустим еда всегда находиться только на одном месте
+
+                //Если фигура не за границей, проверяем встретилась ли змейка с едой
+                sl = Number($('#snake').css("left").split("p")[0]) //голова змейки
+                st = Number($('#snake').css("top").split("p")[0]) //голова змейки
+                ml = Number($('#meal').css("left").split("p")[0])
+                mt = Number($('#meal').css("top").split("p")[0])
+
+                //Изменение координатов головы змейки и изменение массива snakeBody
+                //Далее, движение змейки, при встрече с едой и без. Они отличаются
+                if((sl == ml) && (st == mt)){//если встретилась с едой, то растет
+                    $("#eat").trigger('play')
+                    snakeBody.unshift(String(ml) + ":" + String(mt)) //массив змейки вырос на 1 квадрат
+                    console.log("Змейка встретилась с едой")
+                    isMetWithMeal = true
+
+                    //Надо менять координаты еды. Сейчас голова змейки на еде остановилась:
+                    //Создать массив свободных мест
+                    freePlaces.splice(0, freePlaces.length) //Сначала очистим предыдущий набор свободных мест
+                    tempLeft = 0
+                    tempTop = 0
+                    while(tempLeft<=180){
+                        tempTop = 0
+                        while(tempTop<=180){
+                            //for(var i=1; i<snakeBody.length; i++){
+                                if(!snakeBody.includes(String(tempLeft) + ":" + String(tempTop))){
+                                    freePlaces.push(String(tempLeft) + ":" + String(tempTop))
+                                }
+                            //}
+                            tempTop += 30
+                        }
+                        tempLeft += 30
+                    }
+                    //Массив свободных мест готов
+
+                    //Если массив пустой, значит игра пройдена
+                    if(freePlaces.length == 0){
+                        clearInterval(timer) //Отменяет таймер
+                        //Метод innerHTML убирает всё содержание страницы
+                        document.body.innerHTML = '<audio id="success"></audio><br><h1 id="congratulations"></h1>'
+                        $("#success").attr("src", "success.mp3")
+                        $("#success").attr("controls", "")
+                        $("#congratulations").text("Поздравляю!!")
+                        //$("#success").get(0).play()
+                        jQuery("#success").trigger('play')
+                    }
+
+                    //Рандомно выбираю элемент из массива freePlaces:
+                    randomCoordinateFromFreePlaces = Math.floor(Math.random() * freePlaces.length)
+                    console.log("freePlaces.length: " + freePlaces.length)
+                    $("#meal").css("left", freePlaces[randomCoordinateFromFreePlaces].split(":")[0] + "px")
+                    $("#meal").css("top", freePlaces[randomCoordinateFromFreePlaces].split(":")[1] + "px")
+                }
+                else{
+                    if(currentDirection === "right"){
+                        let newValue = String(sl + 30)
+                        newValue = newValue + "px"
+                        $('#snake').css("left", newValue)
+
+                        snakeBody.unshift(newValue.split("p")[0] + ":" + String(st))
+                        snakeBody.pop() //Удаление последнего элемента
+                    }
+                    else if(currentDirection === "left"){
+                        let newValue = String(sl - 30)
+                        newValue = newValue + "px"
+                        $('#snake').css("left", newValue)
+
+                        snakeBody.unshift(newValue.split("p")[0] + ":" + String(st))
+                        snakeBody.pop() //Удаление последнего элемента
+                    }
+                    else if(currentDirection === "down"){
+                        let newValue = String(st + 30)
+                        newValue = newValue + "px"
+                        $('#snake').css("top", newValue)
+
+                        snakeBody.unshift(String(sl) + ":" + newValue.split("p")[0])
+                        snakeBody.pop() //Удаление последнего элемента
+                    }
+                    else if(currentDirection === "up"){
+                        let newValue = String(st - 30)
+                        newValue = newValue + "px"
+                        $('#snake').css("top", newValue) //Изменение головы змейки
+
+                        snakeBody.unshift(String(sl) + ":" + newValue.split("p")[0])
+                        snakeBody.pop() //Удаление последнего элемента
+                    }
+                }
+            
+                if(isMetWithMeal == true){
+                    if(currentDirection === "right"){
+                        let newValue = String(sl + 30)
+                        newValue = newValue + "px"
+                        $('#snake').css("left", newValue)
+                        snakeBody[0] = $('#snake').css("left").split("p")[0] + ":" + String(st)
+                    }
+                    else if(currentDirection === "left"){
+                        let newValue = String(sl - 30)
+                        newValue = newValue + "px"
+                        $('#snake').css("left", newValue)
+
+                        snakeBody[0] = $('#snake').css("left").split("p")[0] + ":" + String(st)
+                    }
+                    else if(currentDirection === "down"){
+                        let newValue = String(st + 30)
+                        newValue = newValue + "px"
+                        $('#snake').css("top", newValue)
+
+                        snakeBody[0] = String(sl) + ":" + $('#snake').css("top").split("p")[0]
+                    }
+                    else if(currentDirection === "up"){
+                        let newValue = String(st - 30)
+                        newValue = newValue + "px"
+                        $('#snake').css("top", newValue) //Изменение головы змейки
+
+                        snakeBody[0] = String(sl) + ":" + $('#snake').css("top").split("p")[0]
+                    }
+                    isMetWithMeal = false
+                }
+
+
+                //Теперь, когла стали известны НОВЫЕ координаты змейки
+                //Нужно ПОКАЗАТЬ эти координаты
+
+                //Cначала надо удалить старые неактуальные координаты (все div-ы #tempDiv)
+                //Проверка столкнулась ли змейка с самой собой:
+                for(var i=1; i<snakeBody.length; i++){
+                    if(snakeBody[0] == snakeBody[i]){
+                        clearInterval(timer)
+                        document.body.innerHTML = '<h1 id="gameover"></h1>'
+                        $("#gameover").text("ПРОИГРЫШ")
+                    }
+                }
+
+                $("#mainDiv div[id=tempDiv]").remove()
+                
+                let elem = 1
+                while(elem<snakeBody.length){
+                    let tempDiv = document.createElement("div")
+                    
+                    tempDiv.setAttribute("id", "tempDiv")
+                    // tempDiv.style.backgroundColor = "pink" tempDiv.style.display = "inline-block" tempDiv.style.width = "30px" tempDiv.style.height = "30px" tempDiv.style.position = "absolute"
+                    
+                    tempDiv.style.left = snakeBody[elem].split(":")[0] + "px"
+                    tempDiv.style.top = snakeBody[elem].split(":")[1] + "px"
+
+                    $("#mainDiv").append(tempDiv)
+                    elem++
+                }
+
+            }
+        }
+
+
+        $(document).on('keydown keypress keyup', (e)=> {
+            //console.log('Тип события: ' + e.type); // keydown, keypress, keyup
+            //console.log('Код нажатой клавиши или символа: ' + e.which); // код символа позволяет получить только keypress
+            if(e.which === 65){
+                currentDirection = "left"
+                $("#textDiv").text(currentDirection)
+            }
+            else if(e.which === 68){
+                currentDirection = "right"
+                $("#textDiv").text(currentDirection)
+            }
+            else if(e.which === 87){
+                currentDirection = "up"
+                $("#textDiv").text(currentDirection)
+            }
+            else if(e.which === 83){
+                currentDirection = "down"
+                $("#textDiv").text(currentDirection)
+            }
+
+        })
+
+    </script>
+</body>
+</html>
